@@ -163,14 +163,12 @@ def main():
     st.markdown(
     """
     <style>
-        /* Ancho del sidebar */
-        section[data-testid="stSidebar"] {
-            width: 250px !important;
-        }
-
-        /* Ajustar el contenido principal para que no se solape */
-        section[data-testid="stSidebar"] + section {
-            margin-left: 250px !important;
+        /* Reducir tamaño del logo del sidebar */
+        section[data-testid="stSidebar"] img {
+            max-width: 180px;   /* 👈 ajusta aquí */
+            height: auto;
+            margin: 0 auto 12px auto; /* centrado + espacio abajo */
+            display: block;
         }
     </style>
     """,
