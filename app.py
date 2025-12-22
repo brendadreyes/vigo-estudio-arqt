@@ -15,6 +15,8 @@ import plotly.express as px
 import tempfile
 from pathlib import Path
 import uuid
+from datetime import datetime
+
 # =========================
 # Helpers de formato
 # =========================
@@ -216,6 +218,9 @@ def main():
 
     with st.sidebar:
         st.header("📁 Fuente de datos")
+        uploaded_at = st.session_state.get("_tmp_excel_uploaded_at")
+        if uploaded_at:
+            st.caption(f"Última subida: {uploaded_at.strftime('%Y-%m-%d %H:%M:%S')}")
 
         uploaded = st.file_uploader("Sube el Excel (.xlsx)", type=["xlsx"])
 
@@ -240,11 +245,7 @@ def main():
             
             else:
                 st.warning("No hay Excel cargado todavía. Sube un archivo para continuar.")
-        if "_tmp_excel_uploaded_at" in st.session_state:
-            uploaded_at = st.session_state["_tmp_excel_uploaded_at"]
-            st.caption(
-                f"🕒 Última subida: {uploaded_at.strftime('%d/%m/%Y %H:%M')}"
-            )
+        
 
 
         # muestra “fecha última carga” si existe
