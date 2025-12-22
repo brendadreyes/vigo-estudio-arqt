@@ -210,9 +210,6 @@ def main():
     # =========================
     # Carga de datos
     # =========================
-    from pathlib import Path
-    import tempfile
-
     # archivo persistente "mejor esfuerzo"
     LAST_EXCEL = Path(tempfile.gettempdir()) / "vigo_last_uploaded.xlsx"
     LAST_EXCEL_NAME = Path(tempfile.gettempdir()) / "vigo_last_uploaded_name.txt"
@@ -240,8 +237,15 @@ def main():
                 name = LAST_EXCEL_NAME.read_text(encoding="utf-8") if LAST_EXCEL_NAME.exists() else "último_subido.xlsx"
                 excel_path = LAST_EXCEL
                 st.info(f"Usando último Excel subido: {name}")
+            
             else:
                 st.warning("No hay Excel cargado todavía. Sube un archivo para continuar.")
+        if "_tmp_excel_uploaded_at" in st.session_state:
+            uploaded_at = st.session_state["_tmp_excel_uploaded_at"]
+            st.caption(
+                f"🕒 Última subida: {uploaded_at.strftime('%d/%m/%Y %H:%M')}"
+            )
+
 
         # muestra “fecha última carga” si existe
         if excel_path is not None and Path(excel_path).exists():
@@ -260,10 +264,13 @@ def main():
     @st.cache_data(show_spinner=False)
     def _load_df_from_bytes(file_bytes: bytes) -> pd.DataFrame:
         tmp_dir = Path(tempfile.gettempdir())
-        tmp_path = tmp_dir / f"vigo_{uuid.uuid4().hex}.xlsx"
+        tmp_path = tmp_dir / "vigo_uploaded.xlsx"
 
         tmp_path.write_bytes(file_bytes)
+
+        # Guardamos info en session_state
         st.session_state["_tmp_excel_path"] = str(tmp_path)
+        st.session_state["_tmp_excel_uploaded_at"] = datetime.now()
 
         return load_trabajos_realizados(tmp_path)
 
