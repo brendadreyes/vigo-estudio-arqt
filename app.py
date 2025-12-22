@@ -201,7 +201,7 @@ def main():
     if uploaded is not None:
         df = _load_df_from_bytes(uploaded.getvalue())
     else:
-        st.stop()W
+        st.stop()
     # -------------------------
     # Filtros (MULTI)
     # -------------------------
