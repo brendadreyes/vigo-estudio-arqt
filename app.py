@@ -159,6 +159,23 @@ def main():
     page_icon="assets/logo.jpeg",
     layout="wide"
 )
+    
+    st.markdown(
+    """
+    <style>
+        /* Ancho del sidebar */
+        section[data-testid="stSidebar"] {
+            width: 360px !important;
+        }
+
+        /* Ajustar el contenido principal para que no se solape */
+        section[data-testid="stSidebar"] + section {
+            margin-left: 360px !important;
+        }
+    </style>
+    """,
+    unsafe_allow_html=True,
+)
     with st.sidebar:
         st.image("assets/logo.jpeg", use_container_width=True)
 
@@ -193,7 +210,7 @@ def main():
             st.stop()  # 👈 corta la ejecución aquí (no se renderiza nada más)
 
         st.success("✅ Excel cargado.")
-
+        
     @st.cache_data(show_spinner=False)
     def _load_df_from_path(path: Path) -> pd.DataFrame:
         return load_trabajos_realizados(path)
