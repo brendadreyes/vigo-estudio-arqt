@@ -204,27 +204,52 @@ def main():
         st.divider()
 
     
-    base_dir = Path(__file__).resolve().parents[1]
-    default_excel = base_dir / "data" / "GENERAL.xlsx"
+    BASE_DIR = Path(__file__).resolve().parents[1]
 
     # =========================
     # Carga de datos
     # =========================
-    BASE_DIR = Path(__file__).resolve().parents[1]
+    from pathlib import Path
+    import tempfile
 
-    DEFAULT_EXCEL = BASE_DIR / "data" / "GENERAL.xlsx"
-    DEFAULT_EXCEL_ALT = BASE_DIR / "GENERAL.xlsx"
+    # archivo persistente "mejor esfuerzo"
+    LAST_EXCEL = Path(tempfile.gettempdir()) / "vigo_last_uploaded.xlsx"
+    LAST_EXCEL_NAME = Path(tempfile.gettempdir()) / "vigo_last_uploaded_name.txt"
 
     with st.sidebar:
         st.header("📁 Fuente de datos")
 
-        uploaded = st.file_uploader("Subir Excel (GENERAL.xlsx)", type=["xlsx"])
+        uploaded = st.file_uploader("Sube el Excel (.xlsx)", type=["xlsx"])
 
-        if uploaded is None:
-            st.warning("⬆️ Sube el Excel para empezar.")
-            st.stop()  # 👈 corta la ejecución aquí (no se renderiza nada más)
+        excel_path = None  # ruta a fichero (cuando exista)
+        excel_bytes = None  # bytes (cuando venga de upload)
 
-        st.success("✅ Excel cargado.")
+        if uploaded is not None:
+            # guardamos el último subido en disco
+            data = uploaded.getvalue()
+            LAST_EXCEL.write_bytes(data)
+            LAST_EXCEL_NAME.write_text(uploaded.name, encoding="utf-8")
+
+            excel_path = LAST_EXCEL
+            st.success(f"Excel cargado: {uploaded.name}")
+
+        else:
+            # si no suben nada, intentamos usar el último guardado
+            if LAST_EXCEL.exists():
+                name = LAST_EXCEL_NAME.read_text(encoding="utf-8") if LAST_EXCEL_NAME.exists() else "último_subido.xlsx"
+                excel_path = LAST_EXCEL
+                st.info(f"Usando último Excel subido: {name}")
+            else:
+                st.warning("No hay Excel cargado todavía. Sube un archivo para continuar.")
+
+        # muestra “fecha última carga” si existe
+        if excel_path is not None and Path(excel_path).exists():
+            try:
+                mtime = pd.to_datetime(Path(excel_path).stat().st_mtime, unit="s")
+                st.caption(f"Última carga: {mtime.strftime('%Y-%m-%d %H:%M:%S')}")
+            except Exception:
+                pass
+
         
     @st.cache_data(show_spinner=False)
     def _load_df_from_path(path: Path) -> pd.DataFrame:
@@ -242,6 +267,8 @@ def main():
 
     if uploaded is not None:
         df = _load_df_from_bytes(uploaded.getvalue())
+    elif excel_path is not None and Path(excel_path).exists():
+        df = _load_df_from_path(excel_path)
     else:
         st.stop()
     # -------------------------
