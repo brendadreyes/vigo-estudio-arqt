@@ -155,8 +155,13 @@ def style_fact_eurh(
     return styler
 def main():
     st.set_page_config(page_title="VIGO Estudio - Dashboard", layout="wide")
-    st.title("📊 Dashboard — VIGO Estudio")
-    st.caption("Objetivo: análisis de trabajos realizados y métricas clave.")
+    st.title("📊 Análisis de actividad y rentabilidad — VIGO Estudio")
+
+    st.caption(
+    "Análisis integral de la actividad del estudio: "
+    "facturación, volumen de trabajos, rentabilidad (€/h), "
+    "tipologías de servicios, tipos de cliente, captación y evolución temporal."
+)
     base_dir = Path(__file__).resolve().parents[1]
     default_excel = base_dir / "data" / "GENERAL.xlsx"
 
@@ -171,28 +176,13 @@ def main():
     with st.sidebar:
         st.header("📁 Fuente de datos")
 
-        uploaded = st.file_uploader("Subir Excel (opcional)", type=["xlsx"])
-        if uploaded is not None:
-            excel_path = None  # se leerá desde bytes
-            st.success("Usando Excel subido.")
-        else:
-            if DEFAULT_EXCEL.exists():
-                excel_path = DEFAULT_EXCEL
-            elif DEFAULT_EXCEL_ALT.exists():
-                excel_path = DEFAULT_EXCEL_ALT
-            else:
-                excel_path = None
+        uploaded = st.file_uploader("Subir Excel (GENERAL.xlsx)", type=["xlsx"])
 
-            if excel_path is None:
-                st.warning("No se encontró Excel por defecto. Sube un archivo.")
-            else:
-                st.info(f"Usando: {excel_path.name}")
-                try:
-                    mtime = pd.to_datetime(excel_path.stat().st_mtime, unit="s")
-                    st.caption(f"Última modificación: {mtime.strftime('%Y-%m-%d %H:%M:%S')}")
-                except Exception:
-                    pass
+        if uploaded is None:
+            st.warning("⬆️ Sube el Excel para empezar.")
+            st.stop()  # 👈 corta la ejecución aquí (no se renderiza nada más)
 
+        st.success("✅ Excel cargado.")
 
     @st.cache_data(show_spinner=False)
     def _load_df_from_path(path: Path) -> pd.DataFrame:
@@ -210,10 +200,8 @@ def main():
 
     if uploaded is not None:
         df = _load_df_from_bytes(uploaded.getvalue())
-    elif excel_path is not None:
-        df = _load_df_from_path(excel_path)
     else:
-        st.stop()
+        st.stop()W
     # -------------------------
     # Filtros (MULTI)
     # -------------------------
