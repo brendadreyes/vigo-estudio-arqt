@@ -174,6 +174,23 @@ def main():
     """,
     unsafe_allow_html=True,
 )
+    
+    st.markdown(
+    """
+    <style>
+        /* Ancho del sidebar */
+        section[data-testid="stSidebar"] {
+            width: 250px !important;
+        }
+
+        /* Ajustar el contenido principal para que no se solape */
+        section[data-testid="stSidebar"] + section {
+            margin-left: 250px !important;
+        }
+    </style>
+    """,
+    unsafe_allow_html=True,
+)
     with st.sidebar:
         st.image("assets/logo.jpeg", use_container_width=True)
 
