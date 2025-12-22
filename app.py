@@ -218,10 +218,7 @@ def main():
 
     with st.sidebar:
         st.header("📁 Fuente de datos")
-        uploaded_at = st.session_state.get("_tmp_excel_uploaded_at")
-        if uploaded_at:
-            st.caption(f"Última subida: {uploaded_at.strftime('%Y-%m-%d %H:%M:%S')}")
-
+        
         uploaded = st.file_uploader("Sube el Excel (.xlsx)", type=["xlsx"])
 
         excel_path = None  # ruta a fichero (cuando exista)
