@@ -163,7 +163,7 @@ def main():
         st.image("assets/logo.jpeg", use_container_width=True)
         st.divider()
 
-    st.title("📊 Análisis de actividad y rentabilidad — VIGO Estudio")
+    st.title("📊 Dashboard de análisis")
 
     st.caption(
     "Análisis integral de la actividad del estudio: "
