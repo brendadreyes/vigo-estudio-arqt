@@ -161,6 +161,7 @@ def main():
 )
     with st.sidebar:
         st.image("assets/logo.jpeg", use_container_width=True)
+        st.divider()
 
     st.title("📊 Análisis de actividad y rentabilidad — VIGO Estudio")
 
@@ -169,7 +170,6 @@ def main():
     "facturación, volumen de trabajos, rentabilidad (€/h), "
     "tipologías de servicios, tipos de cliente, captación y evolución temporal."
 )
-        st.divider()
     
     base_dir = Path(__file__).resolve().parents[1]
     default_excel = base_dir / "data" / "GENERAL.xlsx"
