@@ -162,13 +162,13 @@ def main():
     with st.sidebar:
         st.image("assets/logo.jpeg", use_container_width=True)
 
-        st.title("📊 Análisis de actividad y rentabilidad — VIGO Estudio")
+    st.title("📊 Análisis de actividad y rentabilidad — VIGO Estudio")
 
-        st.caption(
-        "Análisis integral de la actividad del estudio: "
-        "facturación, volumen de trabajos, rentabilidad (€/h), "
-        "tipologías de servicios, tipos de cliente, captación y evolución temporal."
-    )
+    st.caption(
+    "Análisis integral de la actividad del estudio: "
+    "facturación, volumen de trabajos, rentabilidad (€/h), "
+    "tipologías de servicios, tipos de cliente, captación y evolución temporal."
+)
         st.divider()
     
     base_dir = Path(__file__).resolve().parents[1]
