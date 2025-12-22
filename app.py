@@ -204,7 +204,6 @@ def main():
         st.divider()
 
     
-    BASE_DIR = Path(__file__).resolve().parents[1]
 
     # =========================
     # Carga de datos
@@ -257,12 +256,18 @@ def main():
 
 
     @st.cache_data(show_spinner=False)
+    import tempfile
+    from pathlib import Path
+    import uuid
+
     def _load_df_from_bytes(file_bytes: bytes) -> pd.DataFrame:
-        # Guardamos temporalmente en memoria/archivo para reutilizar pipeline
-        tmp = Path(st.session_state.get("_tmp_excel_path", str(BASE_DIR / ".tmp_uploaded.xlsx")))
-        tmp.write_bytes(file_bytes)
-        st.session_state["_tmp_excel_path"] = str(tmp)
-        return load_trabajos_realizados(tmp)
+        tmp_dir = Path(tempfile.gettempdir())
+        tmp_path = tmp_dir / f"vigo_{uuid.uuid4().hex}.xlsx"
+
+        tmp_path.write_bytes(file_bytes)
+        st.session_state["_tmp_excel_path"] = str(tmp_path)
+
+        return load_trabajos_realizados(tmp_path)
 
 
     if uploaded is not None:
