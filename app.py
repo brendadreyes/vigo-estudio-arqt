@@ -165,12 +165,12 @@ def main():
     <style>
         /* Ancho del sidebar */
         section[data-testid="stSidebar"] {
-            width: 360px !important;
+            width: 250px !important;
         }
 
         /* Ajustar el contenido principal para que no se solape */
         section[data-testid="stSidebar"] + section {
-            margin-left: 360px !important;
+            margin-left: 250px !important;
         }
     </style>
     """,
