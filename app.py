@@ -12,7 +12,9 @@ import numpy as np
 from src.pipeline import load_trabajos_realizados, build_metrics
 import altair as alt
 import plotly.express as px
-
+import tempfile
+from pathlib import Path
+import uuid
 # =========================
 # Helpers de formato
 # =========================
@@ -256,10 +258,6 @@ def main():
 
 
     @st.cache_data(show_spinner=False)
-    import tempfile
-    from pathlib import Path
-    import uuid
-
     def _load_df_from_bytes(file_bytes: bytes) -> pd.DataFrame:
         tmp_dir = Path(tempfile.gettempdir())
         tmp_path = tmp_dir / f"vigo_{uuid.uuid4().hex}.xlsx"
