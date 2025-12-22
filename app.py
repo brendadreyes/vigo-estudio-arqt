@@ -154,14 +154,23 @@ def style_fact_eurh(
 
     return styler
 def main():
-    st.set_page_config(page_title="VIGO Estudio - Dashboard", layout="wide")
-    st.title("📊 Análisis de actividad y rentabilidad — VIGO Estudio")
-
-    st.caption(
-    "Análisis integral de la actividad del estudio: "
-    "facturación, volumen de trabajos, rentabilidad (€/h), "
-    "tipologías de servicios, tipos de cliente, captación y evolución temporal."
+    st.set_page_config(
+    page_title="Dashboard — VIGO Estudio",
+    page_icon="assets/logo.jpeg",
+    layout="wide"
 )
+    with st.sidebar:
+        st.image("assets/logo.jpeg", use_container_width=True)
+
+        st.title("📊 Análisis de actividad y rentabilidad — VIGO Estudio")
+
+        st.caption(
+        "Análisis integral de la actividad del estudio: "
+        "facturación, volumen de trabajos, rentabilidad (€/h), "
+        "tipologías de servicios, tipos de cliente, captación y evolución temporal."
+    )
+        st.divider()
+    
     base_dir = Path(__file__).resolve().parents[1]
     default_excel = base_dir / "data" / "GENERAL.xlsx"
 
