@@ -208,50 +208,6 @@ def main():
         st.divider()
 
     
-
-    # =========================
-    # Carga de datos
-    # =========================
-    # archivo persistente "mejor esfuerzo"
-    LAST_EXCEL = Path(tempfile.gettempdir()) / "vigo_last_uploaded.xlsx"
-    LAST_EXCEL_NAME = Path(tempfile.gettempdir()) / "vigo_last_uploaded_name.txt"
-
-    with st.sidebar:
-        st.header("📁 Fuente de datos")
-        
-        uploaded = st.file_uploader("Sube el Excel (.xlsx)", type=["xlsx"])
-
-        excel_path = None  # ruta a fichero (cuando exista)
-        excel_bytes = None  # bytes (cuando venga de upload)
-
-        if uploaded is not None:
-            # guardamos el último subido en disco
-            data = uploaded.getvalue()
-            LAST_EXCEL.write_bytes(data)
-            LAST_EXCEL_NAME.write_text(uploaded.name, encoding="utf-8")
-
-            excel_path = LAST_EXCEL
-            st.success(f"Excel cargado: {uploaded.name}")
-
-        else:
-            # si no suben nada, intentamos usar el último guardado
-            if LAST_EXCEL.exists():
-                name = LAST_EXCEL_NAME.read_text(encoding="utf-8") if LAST_EXCEL_NAME.exists() else "último_subido.xlsx"
-                excel_path = LAST_EXCEL
-                st.info(f"Usando último Excel subido: {name}")
-            
-            else:
-                st.warning("No hay Excel cargado todavía. Sube un archivo para continuar.")
-        
-
-
-        # muestra “fecha última carga” si existe
-        if excel_path is not None and Path(excel_path).exists():
-            try:
-                mtime = pd.to_datetime(Path(excel_path).stat().st_mtime, unit="s")
-                st.caption(f"Última carga: {mtime.strftime('%Y-%m-%d %H:%M:%S')}")
-            except Exception:
-                pass
         # =========================
         # Carga de datos (persistencia "mejor esfuerzo")
         # =========================
