@@ -252,6 +252,72 @@ def main():
                 st.caption(f"Última carga: {mtime.strftime('%Y-%m-%d %H:%M:%S')}")
             except Exception:
                 pass
+        # =========================
+        # Carga de datos (persistencia "mejor esfuerzo")
+        # =========================
+
+        APP_TMP = Path(tempfile.gettempdir()) / "vigo_estudio_app"
+        APP_TMP.mkdir(parents=True, exist_ok=True)
+
+        LAST_EXCEL = APP_TMP / "last_uploaded.xlsx"
+        LAST_META = APP_TMP / "last_uploaded_meta.json"
+
+
+        def _write_last_uploaded(file_bytes: bytes, filename: str) -> None:
+            """Sobrescribe el último excel y guarda metadatos."""
+            LAST_EXCEL.write_bytes(file_bytes)
+            meta = {
+                "filename": filename,
+                "uploaded_at": datetime.now().isoformat(timespec="seconds"),
+            }
+            LAST_META.write_text(pd.Series(meta).to_json(), encoding="utf-8")
+
+
+        def _read_last_meta() -> dict:
+            if LAST_META.exists():
+                try:
+                    return pd.read_json(LAST_META.read_text(encoding="utf-8"), typ="series").to_dict()
+                except Exception:
+                    return {}
+            return {}
+
+
+        with st.sidebar:
+            st.header("📁 Fuente de datos")
+            uploaded = st.file_uploader("Sube el Excel (.xlsx)", type=["xlsx"])
+
+            excel_path: Path | None = None
+
+            if uploaded is not None:
+                # Guardamos el último subido (sobrescribe el anterior)
+                data = uploaded.getvalue()
+                _write_last_uploaded(data, uploaded.name)
+
+                excel_path = LAST_EXCEL
+                st.success(f"Excel cargado: {uploaded.name}")
+
+            else:
+                # Si no suben nada, intentamos usar el último guardado
+                if LAST_EXCEL.exists():
+                    meta = _read_last_meta()
+                    filename = meta.get("filename", "último_subido.xlsx")
+                    st.info(f"Usando último Excel subido: {filename}")
+                    excel_path = LAST_EXCEL
+                else:
+                    st.warning("No hay Excel cargado todavía. Sube un archivo para continuar.")
+                    st.stop()
+
+            # Mostrar fecha última carga (preferimos la guardada en meta)
+            meta = _read_last_meta()
+            if meta.get("uploaded_at"):
+                st.caption(f"Última carga: {meta['uploaded_at'].replace('T', ' ')}")
+            else:
+                # fallback por mtime del archivo
+                try:
+                    mtime = pd.to_datetime(excel_path.stat().st_mtime, unit="s")
+                    st.caption(f"Última carga: {mtime.strftime('%Y-%m-%d %H:%M:%S')}")
+                except Exception:
+                    pass
 
         
     @st.cache_data(show_spinner=False)
