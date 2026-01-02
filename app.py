@@ -1144,6 +1144,7 @@ def main():
                 # 1) Escalar
                 st.write("✅ **Escalar** — alto volumen y alta rentabilidad")
                 t = prep_table(by_tt_tc[by_tt_tc["accion"] == "Escalar"].sort_values("facturacion", ascending=False))
+                t.drop(columns=["accion"], inplace=True)
                 st.dataframe(
                     t.style
                     .format({"Honorarios": money, "Horas": num_1, "€/h": money_2})
@@ -1155,6 +1156,7 @@ def main():
                 # 2) Revisar
                 st.write("🛠️ **Revisar precio/tiempos** — alto volumen, €/h bajo")
                 t = prep_table(by_tt_tc[by_tt_tc["accion"] == "Revisar"].sort_values("facturacion", ascending=False))
+                t.drop(columns=["accion"], inplace=True)
                 st.dataframe(
                     t.style
                     .format({"Honorarios": money, "Horas": num_1, "€/h": money_2})
@@ -1166,6 +1168,7 @@ def main():
                 # 3) Oportunidad
                 st.write("🎯 **Oportunidad** — €/h alto pero poco volumen")
                 t = prep_table(by_tt_tc[by_tt_tc["accion"] == "Oportunidad"].sort_values("eur_h", ascending=False))
+                t.drop(columns=["accion"], inplace=True)
                 st.dataframe(
                     t.style
                     .format({"Honorarios": money, "Horas": num_1, "€/h": money_2})
@@ -1176,6 +1179,7 @@ def main():
                 # 4) Evitar
                 st.write("❌ **Evitar / estandarizar** — bajo impacto y €/h bajo")
                 t = prep_table(by_tt_tc[by_tt_tc["accion"] == "Evitar"].sort_values(["facturacion", "eur_h"], ascending=[False, True]))
+                t.drop(columns=["accion"], inplace=True)
                 st.dataframe(
                     t.style
                     .format({"Honorarios": money, "Horas": num_1, "€/h": money_2})
@@ -1189,19 +1193,19 @@ def main():
                     t = prep_table(by_tt_tc[by_tt_tc["accion"] == "Sin datos"])
                     st.dataframe(t, width="stretch")
 
-    # # =========================
-    # # Detalle (opcional)
-    # # =========================
-    # with st.expander("🔍 Ver detalle de trabajos (según selección)", expanded=False):
-    #     dview = dff.copy()
-    #     for col in ["YM_ENCARGO","YM_ENTREGA"]: 
-    #         if col in dview.columns:
-    #             dview["_YM"] = pd.PeriodIndex(dview[col].astype(str), freq="M")
-    #             dview = dview.sort_values("_YM", ascending=False).drop(columns=["_YM"])
-    #     dview = dview.rename(columns={"YM_ENCARGO": "FECHA DE ENCARGO", "YM_ENTREGA": "FECHA DE ENTREGA"})
+    # =========================
+    # Detalle (opcional)
+    # =========================
+    with st.expander("🔍 Ver detalle de trabajos (según selección)", expanded=False):
+        dview = dff.copy()
+        for col in ["YM_ENCARGO","YM_ENTREGA"]: 
+            if col in dview.columns:
+                dview["_YM"] = pd.PeriodIndex(dview[col].astype(str), freq="M")
+                dview = dview.sort_values("_YM", ascending=False).drop(columns=["_YM"])
+        dview = dview.rename(columns={"YM_ENCARGO": "FECHA DE ENCARGO", "YM_ENTREGA": "FECHA DE ENTREGA"})
         
-    #     st.dataframe(dview.drop(columns=["UNNAMED 0","UNNAMED 11"], errors="ignore"), width="stretch")
-    # st.caption("Nota: Las métricas se recalculan automáticamente al cargar/actualizar el Excel. No requiere ejecutar código.")
+        st.dataframe(dview.drop(columns=["UNNAMED 0","UNNAMED 11"], errors="ignore"), width="stretch")
+    st.caption("Nota: Las métricas se recalculan automáticamente al cargar/actualizar el Excel. No requiere ejecutar código.")
 
 
 
