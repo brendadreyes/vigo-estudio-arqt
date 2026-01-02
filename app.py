@@ -992,6 +992,7 @@ def main():
                     tooltip=[
                         alt.Tooltip("YM:N", title="Año-Mes"),
                         alt.Tooltip("encargos_entrados:Q", title="Encargos entrados"),
+                        alt.Tooltip("importe_entrado:Q", title="Importe entrado (€)", format=",.0f"),
                         alt.Tooltip("facturacion_entrega:Q", title="Facturación (€)", format=",.0f"),
                     ],
                 )
@@ -1005,6 +1006,7 @@ def main():
                     tooltip=[
                         alt.Tooltip("YM:N", title="Año-Mes"),
                         alt.Tooltip("encargos_entrados:Q", title="Encargos entrados"),
+                        alt.Tooltip("importe_entrado:Q", title="Importe entrado (€)", format=",.0f"),
                         alt.Tooltip("facturacion_entrega:Q", title="Facturación (€)", format=",.0f"),
                     ],
                 )

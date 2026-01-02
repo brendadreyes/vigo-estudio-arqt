@@ -222,12 +222,15 @@ def build_metrics(df_realizados: pd.DataFrame) -> dict[str, pd.DataFrame]:
         entradas = (
             df_realizados.dropna(subset=["YM_ENCARGO"])
             .groupby("YM_ENCARGO", dropna=False)
-            .agg(encargos_entrados=("NOMBRE ENCARGO", "count"))
+            .agg(
+                encargos_entrados=("NOMBRE ENCARGO", "count"),
+                importe_entrado=("MI PRECIO", "sum"),  # 👈 NUEVO: importe total de los encargos que entran ese mes
+            )
             .reset_index()
             .rename(columns={"YM_ENCARGO": "YM"})
         )
     else:
-        entradas = pd.DataFrame(columns=["YM", "encargos_entrados"])
+        entradas = pd.DataFrame(columns=["YM", "encargos_entrados", "importe_entrado"])
     if "FECHA ENTREGA" in df_realizados.columns and "MI PRECIO" in df_realizados.columns:
         df_realizados['FECHA ENTREGA'] = df_realizados['FECHA ENTREGA'].dt.to_period('M').astype(str)
         fact = (
@@ -240,8 +243,8 @@ def build_metrics(df_realizados: pd.DataFrame) -> dict[str, pd.DataFrame]:
     else:
         fact = pd.DataFrame(columns=["YM", "facturacion_entrega"])
     ts_dual = (
-        pd.merge(entradas, fact, on="YM", how="outer")
-        .fillna({"encargos_entrados": 0, "facturacion_entrega": 0})
+    pd.merge(entradas, fact, on="YM", how="outer")
+    .fillna({"encargos_entrados": 0, "importe_entrado": 0, "facturacion_entrega": 0})
     )
     ts_dual = ts_dual[ts_dual["YM"].notna() & (ts_dual["YM"].isin(["", "NA", "NaT"]) == False)]
 
@@ -251,8 +254,6 @@ def build_metrics(df_realizados: pd.DataFrame) -> dict[str, pd.DataFrame]:
         ts_dual = ts_dual.sort_values("_YM").drop(columns=["_YM"])
 
     out["time_series_dual"] = ts_dual
-    print(f"DEBUG · time_series_dual:{out['time_series_dual']}")
-    print("is nan:", out['time_series_dual'].isna().sum())
     # Captación de cliente
     if "CAPTACIÓN CLIENTE" in df_realizados.columns and "CLIENTE" in df_realizados.columns:
         g = (
