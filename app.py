@@ -525,7 +525,7 @@ def main():
     # =========================
     st.header("Análisis")
 
-    tab_tt, tab_tc, tab_cl, tab_temp = st.tabs(["Tipo de trabajo", "Tipo de cliente", "Cliente", "Evolución Temporal"])
+    tab_tt, tab_tc, tab_cl, tab_temp, tab_strat = st.tabs(["Tipo de trabajo", "Tipo de cliente", "Cliente", "Evolución Temporal", "Acciones (TT x TC)"])
     # -------------------------
     # TAB 1: Tipo de trabajo
     # -------------------------
@@ -1112,87 +1112,126 @@ def main():
     # -------------------------
     # Acciones estratégicas (Tipo trabajo x Tipo cliente)
     # -------------------------
-    
-    # Agrupación combinada
-    by_tt_tc = (
-        dff
-        .groupby(["TIPO DE TRABAJO", "TIPO DE CLIENTE"], dropna=False)
-        .agg(
-            trabajos=("NOMBRE ENCARGO", "count"),
-            horas=("HORAS DEDICADAS", "sum"),
-            facturacion=("MI PRECIO", "sum"),
+    with tab_strat:
+        st.subheader("🧠 Acciones estratégicas: Tipo de trabajo × Tipo de cliente")
+        st.caption(
+            "Agrupamos cada combinación (tipo de trabajo + tipo de cliente) como una unidad de negocio. "
+            "Clasificamos según volumen (Honorarios) y rentabilidad (€/h) usando la mediana como umbral."
         )
-        .reset_index()
-    )
-    by_tt_tc["eur_h"] = by_tt_tc["facturacion"] / by_tt_tc["horas"]
+        cols_needed = {"TIPO DE TRABAJO", "TIPO DE CLIENTE", "NOMBRE ENCARGO", "HORAS DEDICADAS", "MI PRECIO"}
+        if not cols_needed.issubset(dff.columns):
+            st.info("Faltan columnas necesarias para este análisis (TT, TC, MI PRECIO, HORAS DEDICADAS, NOMBRE ENCARGO).")
+        else:
+            tmp = dff.copy()
 
-    # Umbrales
-    fact_med = by_tt_tc["facturacion"].median()
-    eurh_med = by_tt_tc["eur_h"].median()
+            # Asegurar numéricos
+            tmp["MI PRECIO"] = pd.to_numeric(tmp["MI PRECIO"], errors="coerce")
+            tmp["HORAS DEDICADAS"] = pd.to_numeric(tmp["HORAS DEDICADAS"], errors="coerce")
 
-    # Clasificación
-    def classify(row):
-        if row["facturacion"] >= fact_med and row["eur_h"] >= eurh_med:
-            return "Escalar"
-        if row["facturacion"] >= fact_med and row["eur_h"] < eurh_med:
-            return "Revisar"
-        if row["facturacion"] < fact_med and row["eur_h"] >= eurh_med:
-            return "Oportunidad"
-        return "Evitar"
+            by_tt_tc = (
+                tmp.dropna(subset=["TIPO DE TRABAJO", "TIPO DE CLIENTE"])
+                .groupby(["TIPO DE TRABAJO", "TIPO DE CLIENTE"], dropna=False)
+                .agg(
+                    trabajos=("NOMBRE ENCARGO", "count"),
+                    horas=("HORAS DEDICADAS", "sum"),
+                    facturacion=("MI PRECIO", "sum"),
+                )
+                .reset_index()
+            )
 
-    by_tt_tc["accion"] = by_tt_tc.apply(classify, axis=1)
-    st.divider()
-    st.subheader("🧠 Acciones estratégicas: Tipo de trabajo × Tipo de cliente")
-    st.caption(
-    "Análisis de cada combinación como una unidad de negocio independiente. "
-    "Las acciones se basan en volumen (facturación) y rentabilidad (€/h)."
-    )
-    # Escalar
-    st.write("✅ **Escalar** — combinaciones rentables y con volumen")
+            if by_tt_tc.empty:
+                st.info("No hay datos suficientes con la selección actual.")
+            else:
+                # €/h robusto
+                by_tt_tc["eur_h"] = np.where(by_tt_tc["horas"] > 0, by_tt_tc["facturacion"] / by_tt_tc["horas"], np.nan)
 
-    t = by_tt_tc[by_tt_tc["accion"] == "Escalar"].copy()
-    t = t.sort_values("facturacion", ascending=False)
+                # Quitamos combinaciones sin horas o sin facturación (opcional)
+                by_tt_tc = by_tt_tc.replace([np.inf, -np.inf], np.nan)
 
-    st.dataframe(
-        t.style
-        .format({"facturacion": money, "eur_h": money_2})
-        .background_gradient(subset=["eur_h"], cmap="Greens"),
-        width="stretch"
-    )
-    # Revisar
-    st.write("🛠️ **Revisar precios o tiempos** — mucho volumen pero baja rentabilidad")
+                fact_med = by_tt_tc["facturacion"].median(skipna=True)
+                eurh_med = by_tt_tc["eur_h"].median(skipna=True)
 
-    t = by_tt_tc[by_tt_tc["accion"] == "Revisar"].copy()
+                def classify(row):
+                    if pd.isna(row["facturacion"]) or pd.isna(row["eur_h"]):
+                        return "Sin datos"
+                    if row["facturacion"] >= fact_med and row["eur_h"] >= eurh_med:
+                        return "Escalar"
+                    if row["facturacion"] >= fact_med and row["eur_h"] < eurh_med:
+                        return "Revisar"
+                    if row["facturacion"] < fact_med and row["eur_h"] >= eurh_med:
+                        return "Oportunidad"
+                    return "Evitar"
 
-    st.dataframe(
-        t.style
-        .format({"facturacion": money, "eur_h": money_2})
-        .background_gradient(subset=["eur_h"], cmap="Reds"),
-        width="stretch"
-    )
+                by_tt_tc["accion"] = by_tt_tc.apply(classify, axis=1)
 
-    # Oportunidad
-    st.write("🎯 **Oportunidad** — poco volumen pero buen €/h")
+                # Helper formato tabla
+                def prep_table(df: pd.DataFrame) -> pd.DataFrame:
+                    t = df.copy().reset_index(drop=True)
+                    return t.rename(columns={
+                        "TIPO DE TRABAJO": "Tipo de trabajo",
+                        "TIPO DE CLIENTE": "Tipo de cliente",
+                        "trabajos": "Nº trabajos",
+                        "horas": "Horas",
+                        "facturacion": "Honorarios",
+                        "eur_h": "€/h",
+                    })
 
-    t = by_tt_tc[by_tt_tc["accion"] == "Oportunidad"].copy()
+                # Contadores resumen
+                c1, c2, c3, c4 = st.columns(4)
+                c1.metric("Escalar", int((by_tt_tc["accion"] == "Escalar").sum()))
+                c2.metric("Revisar", int((by_tt_tc["accion"] == "Revisar").sum()))
+                c3.metric("Oportunidad", int((by_tt_tc["accion"] == "Oportunidad").sum()))
+                c4.metric("Evitar", int((by_tt_tc["accion"] == "Evitar").sum()))
 
-    st.dataframe(
-        t.style
-        .format({"facturacion": money, "eur_h": money_2})
-        .background_gradient(subset=["eur_h"], cmap="Greens"),
-        width="stretch"
-    )
+                st.divider()
 
-    # Evitar
-    st.write("❌ **Evitar o estandarizar** — bajo impacto y baja rentabilidad")
+                # 1) Escalar
+                st.write("✅ **Escalar** — alto volumen y alta rentabilidad")
+                t = prep_table(by_tt_tc[by_tt_tc["accion"] == "Escalar"].sort_values("facturacion", ascending=False))
+                st.dataframe(
+                    t.style
+                    .format({"Honorarios": money, "Horas": num_1, "€/h": money_2})
+                    .background_gradient(subset=["Honorarios"], cmap="Blues")
+                    .background_gradient(subset=["€/h"], cmap="Greens"),
+                    width="stretch"
+                )
 
-    t = by_tt_tc[by_tt_tc["accion"] == "Evitar"].copy()
+                # 2) Revisar
+                st.write("🛠️ **Revisar precio/tiempos** — alto volumen, €/h bajo")
+                t = prep_table(by_tt_tc[by_tt_tc["accion"] == "Revisar"].sort_values("facturacion", ascending=False))
+                st.dataframe(
+                    t.style
+                    .format({"Honorarios": money, "Horas": num_1, "€/h": money_2})
+                    .background_gradient(subset=["Honorarios"], cmap="Blues")
+                    .background_gradient(subset=["€/h"], cmap="Reds_r"),
+                    width="stretch"
+                )
 
-    st.dataframe(
-        t.style
-        .format({"facturacion": money, "eur_h": money_2}),
-        width="stretch"
-    )
+                # 3) Oportunidad
+                st.write("🎯 **Oportunidad** — €/h alto pero poco volumen")
+                t = prep_table(by_tt_tc[by_tt_tc["accion"] == "Oportunidad"].sort_values("eur_h", ascending=False))
+                st.dataframe(
+                    t.style
+                    .format({"Honorarios": money, "Horas": num_1, "€/h": money_2})
+                    .background_gradient(subset=["€/h"], cmap="Greens"),
+                    width="stretch"
+                )
+
+                # 4) Evitar
+                st.write("❌ **Evitar / estandarizar** — bajo impacto y €/h bajo")
+                t = prep_table(by_tt_tc[by_tt_tc["accion"] == "Evitar"].sort_values(["facturacion", "eur_h"], ascending=[False, True]))
+                st.dataframe(
+                    t.style
+                    .format({"Honorarios": money, "Horas": num_1, "€/h": money_2})
+                    .background_gradient(subset=["€/h"], cmap="Reds_r"),
+                    width="stretch"
+                )
+
+                # Opcional: mostrar también "Sin datos"
+                if (by_tt_tc["accion"] == "Sin datos").any():
+                    st.write("ℹ️ **Sin datos** — falta horas o facturación")
+                    t = prep_table(by_tt_tc[by_tt_tc["accion"] == "Sin datos"])
+                    st.dataframe(t, width="stretch")
 
     # =========================
     # Detalle (opcional)
