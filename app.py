@@ -525,7 +525,7 @@ def main():
     # =========================
     st.header("Análisis")
 
-    tab_tt, tab_tc, tab_cl, tab_temp = st.tabs(["Tipo de trabajo", "Tipo de cliente", "Cliente", "Temporal"])
+    tab_tt, tab_tc, tab_cl, tab_temp = st.tabs(["Tipo de trabajo", "Tipo de cliente", "Cliente", "Evolución Temporal"])
     # -------------------------
     # TAB 1: Tipo de trabajo
     # -------------------------
@@ -1109,10 +1109,90 @@ def main():
 
             st.altair_chart(chart, use_container_width=True)
 
+    # -------------------------
+    # Acciones estratégicas (Tipo trabajo x Tipo cliente)
+    # -------------------------
+    
+    # Agrupación combinada
+    by_tt_tc = (
+        dff
+        .groupby(["TIPO DE TRABAJO", "TIPO DE CLIENTE"], dropna=False)
+        .agg(
+            trabajos=("NOMBRE ENCARGO", "count"),
+            horas=("HORAS DEDICADAS", "sum"),
+            facturacion=("MI PRECIO", "sum"),
+        )
+        .reset_index()
+    )
+    by_tt_tc["eur_h"] = by_tt_tc["facturacion"] / by_tt_tc["horas"]
 
+    # Umbrales
+    fact_med = by_tt_tc["facturacion"].median()
+    eurh_med = by_tt_tc["eur_h"].median()
 
+    # Clasificación
+    def classify(row):
+        if row["facturacion"] >= fact_med and row["eur_h"] >= eurh_med:
+            return "Escalar"
+        if row["facturacion"] >= fact_med and row["eur_h"] < eurh_med:
+            return "Revisar"
+        if row["facturacion"] < fact_med and row["eur_h"] >= eurh_med:
+            return "Oportunidad"
+        return "Evitar"
 
+    by_tt_tc["accion"] = by_tt_tc.apply(classify, axis=1)
+    st.divider()
+    st.subheader("🧠 Acciones estratégicas: Tipo de trabajo × Tipo de cliente")
+    st.caption(
+    "Análisis de cada combinación como una unidad de negocio independiente. "
+    "Las acciones se basan en volumen (facturación) y rentabilidad (€/h)."
+    )
+    # Escalar
+    st.write("✅ **Escalar** — combinaciones rentables y con volumen")
 
+    t = by_tt_tc[by_tt_tc["accion"] == "Escalar"].copy()
+    t = t.sort_values("facturacion", ascending=False)
+
+    st.dataframe(
+        t.style
+        .format({"facturacion": money, "eur_h": money_2})
+        .background_gradient(subset=["eur_h"], cmap="Greens"),
+        width="stretch"
+    )
+    # Revisar
+    st.write("🛠️ **Revisar precios o tiempos** — mucho volumen pero baja rentabilidad")
+
+    t = by_tt_tc[by_tt_tc["accion"] == "Revisar"].copy()
+
+    st.dataframe(
+        t.style
+        .format({"facturacion": money, "eur_h": money_2})
+        .background_gradient(subset=["eur_h"], cmap="Reds"),
+        width="stretch"
+    )
+
+    # Oportunidad
+    st.write("🎯 **Oportunidad** — poco volumen pero buen €/h")
+
+    t = by_tt_tc[by_tt_tc["accion"] == "Oportunidad"].copy()
+
+    st.dataframe(
+        t.style
+        .format({"facturacion": money, "eur_h": money_2})
+        .background_gradient(subset=["eur_h"], cmap="Greens"),
+        width="stretch"
+    )
+
+    # Evitar
+    st.write("❌ **Evitar o estandarizar** — bajo impacto y baja rentabilidad")
+
+    t = by_tt_tc[by_tt_tc["accion"] == "Evitar"].copy()
+
+    st.dataframe(
+        t.style
+        .format({"facturacion": money, "eur_h": money_2}),
+        width="stretch"
+    )
 
     # =========================
     # Detalle (opcional)
