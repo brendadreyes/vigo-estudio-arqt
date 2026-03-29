@@ -13,11 +13,35 @@ MONTH_MAP = {
 
 
 def load_trabajos_realizados(excel_path: Path) -> pd.DataFrame:
+
+    xls = pd.ExcelFile(excel_path)
+    sheet_names = xls.sheet_names
+
+    # Caso 1: solo hay una hoja -> leer esa
+    if len(sheet_names) == 1:
+        sheet_name = sheet_names[0]
+
+    # Caso 2: hay varias hojas -> buscar TRABAJOS REALIZADOS
+    elif len(sheet_names) > 1:
+        if "TRABAJOS REALIZADOS" in sheet_names:
+            sheet_name = "TRABAJOS REALIZADOS"
+        else:
+            raise ValueError(
+                f"No se puede leer el Excel: hay varias hojas ({sheet_names}) "
+                f"y no existe la hoja 'TRABAJOS REALIZADOS'."
+            )
+
+    # Caso raro: sin hojas
+    else:
+        raise ValueError("No se puede leer el Excel: el archivo no contiene hojas.")
+
+    # Leer detectando automáticamente la fila de cabecera
     df = parse_structured_sheet(
         excel_path=excel_path,
-        sheet_name="TRABAJOS REALIZADOS",
-        header_row=3  # Fila 4 (0-based index 3)
+        sheet_name=sheet_name,
+        must_contain=["MES", "CLIENTE", "PRECIO"]
     )
+
 
     # Limpieza de texto
     for col in [
